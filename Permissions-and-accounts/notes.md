@@ -65,3 +65,13 @@ NotAction: explicity matches everything except the specified list of actions
     if both == false then true 
 
 # Permissions boundaries
+
+Dont grant any access on their own. they define maximum permissions an identiy can receive
+- even if you grant a permission for something, if that's outside the permissions boundaries, they don't apply 
+
+Delegation problems
+- permissions boundaries should be used to fix issues of people who are IAM admins, elevating their own permissions or creating new accounts that they will give full administrator permissions
+
+Steps:
+- you need to create a policy that will act as the boundary
+- make sure the user cannot edit the boundaries, as well as make edits to their own user
