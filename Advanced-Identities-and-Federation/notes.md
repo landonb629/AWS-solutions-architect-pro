@@ -53,3 +53,21 @@ Sizes: impacts the throughput of the connectors
 - large
 
 - you can use multiple AD connectors to spread the load 
+
+
+# AWS Control Tower 
+
+- allow quick and easy setup of multi-account environments to implement aws best practices 
+
+Very similar to AWS organizations, but there are many features that are added on: 
+- IAM identity center
+- Cloudformation
+- Config
+- Guard duty, security hub, security lake
+
+- account factory: automating and standarizing new account creations, also allows for customization 
+- guard rails: in the form of policies that dictate actions that aren't allowed, helps to standardize governance and compliance
+  - these come in multiple forms: preventative, proactive, detective
+    - preventative: implemented in the form of SCPs
+    - detective: implemented in the form of aws config rules
+    - proactive: implemented in the form of cloudformation hooks, that will stop code changes + other changes from happening before they are able to be committed to IaC
