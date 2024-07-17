@@ -72,3 +72,71 @@ eBGP: routing between AS's
 - this service in turn brings the service closer to the customer and requires
 
 - Global accelerator moves the actual aws network closer to the customer, not caching the assets like cloudformation 
+
+- global accelerator doesn't cache anything, it works at layer 4 (TCP / UDP)
+
+
+# IPSEC fundamentals
+
+- setup secure tunnels across insecure networks 
+- between two peer networks (local + remote)
+- provides authentication, and encryption while in transit
+
+two phases: 
+- phase 1 + phase 2 
+IKE Phase 1:
+- protocol for how keys are exchanged 
+- authenticate using preshard key / certificate 
+- IKE SA ( plase 1 tunnel )
+IKE Phase 2:
+- use the keys agreed in phase 1 
+- agree on encryption method
+- use key for bulk transfer 
+
+# Site 2 Site VPN 
+- connection between on-premise and VPC ( encrypted ) running over the public internet
+
+- Can be fully HA if you design it correctly -> they're quick to provision
+
+Steps:
+1. create a VPC 
+2. Virtual private gateway
+3. Customer gateway -> logical configuration that represents the public IP of the physical router on premise
+4. VPN Connecion -> linked to VPG and CGW
+
+static vs dynamic vpns
+- dynamic: uses BGP, dynamic routing is discovered, communicates the state of links to the other peer, enabling route propogation on the route tables in the VPC
+- status: static routes must be configured on the route tables 
+
+VPN considerations:
+- max throughput: 1.25GBPS
+- all VPN connections: 1.25GBps 
+- latency considerations: can be many hops between AWS and on-premise, so it's inconsistent 
+- data transfer, and hourly cost 
+- very quick to setup, much faster than setting up DX 
+- can be used as backup for DX connection 
+
+
+# Transit gateway refresher 
+- connects VPCs to each other, and on-premise 
+- network gateway, HA and scalable
+- supports transitive routing 
+- can be used to create global networks 
+- can be shared between accounts with RAM 
+attachments:
+- VPC, S2S, direct connect gateway
+
+TGW advanced concepts: 
+- TGW has a main route table that holds all of the routes that are learned from the attachments
+- can peer with up to 50 other transit gateways
+- there is no route propogation over peering attachments ( tgw -> tgw )
+- unique ASNs for future route propogation feature 
+- public DNS -> private IP resolution doesn't work over peering attachments 
+
+- association: route table is associated with an attachment
+- propogation: configuration about which route tables are going to be populated 
+
+if you need to isolate which VPCs can talk to which locations, you'll need to create another VPC, and make sure that the attachments aren't propogating their routes, but the destinations are propogating 
+
+# Advanced VPC routing 
+- route tables can be associated with an IGW or VGW
