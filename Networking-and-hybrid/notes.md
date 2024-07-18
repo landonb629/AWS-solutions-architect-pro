@@ -98,6 +98,10 @@ IKE Phase 2:
 
 - Can be fully HA if you design it correctly -> they're quick to provision
 
+terms:
+- customer gateway: the public interface on premise router, this gets created as a logical resource in AWS 
+- Virtual private gateway: the interface on the amazon side that gets attached to a single VPC
+
 Steps:
 1. create a VPC 
 2. Virtual private gateway
@@ -116,6 +120,8 @@ VPN considerations:
 - very quick to setup, much faster than setting up DX 
 - can be used as backup for DX connection 
 
+accelerate s2s vpn: utilizes the aws global accelerator network, the public internet is only used to get to the edge location, this is what provides lower latency and less jitter
+  - virtual private gateways are not supported when using accelerated site to site VPN 
 
 # Transit gateway refresher 
 - connects VPCs to each other, and on-premise 
@@ -140,3 +146,49 @@ if you need to isolate which VPCs can talk to which locations, you'll need to cr
 
 # Advanced VPC routing 
 - route tables can be associated with an IGW or VGW
+
+# AWS client VPN functionality
+- managed implementation of OpenVPN 
+- associated with one VPN 
+
+client VPN endpoint: associate with one VPC, and multiple subnets inside VPCs
+client VPN route table: contains the target networks, you can manually add routes as well
+
+- you would most likely be creating a VPN VNET, and from there you can connect to the public internet, or peer with other VPCs
+- client routing table will replace the local client route table
+
+Split tunnel VPN: 
+- allows clients to use their local route table, it just adds the routing to their local route table 
+
+# AWS Direct connect concepts
+- business premises -> DX location -> AWS region 
+- DX = port allocation at a DX location, it's up to you to arrange for this to be connected
+- port has an hourly cost & outbound data transfer
+- provisioning time ( anywhere from 1-2 months ).... physical cables & no resilience 
+- provides speeds from 1, 10, 100 GBps
+
+customer premises router ---> DX location (this is a data center not owned by AWS) ---> AWS region ( public / private services )
+
+## DX terms
+- DX connection: physical port (1, 10, 100Gbps)
+- you can't connect to DX with copper connections, fiber is a requirement
+- autonegotiation is DISABLED, and port speed + duplex is manually set
+- router must support BGP 
+- optional use of macsec and bidirectional forwarding mode
+
+## Connection process 
+- create a DX request
+- download LOA-CFA to initiate a cross connect between AWS and customer infra in the DX location
+- cross connect is implemented by the data center staff 
+
+## DX virtual interfaces 
+- DX connections can have 50 public+private + 1 virtual interface on a direct connect connection
+Virtual interfaces: allow you to run multiple l3 networks over layer 2 connection (direct connect)
+  - this is what allows for VLANS and BGP peering sessions 
+
+3 types of VIF:
+- public: allow you to connect to public AWS services 
+- private: used to connect to AWS private services + VPCs
+- transit
+
+
