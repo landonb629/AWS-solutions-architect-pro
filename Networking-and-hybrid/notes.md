@@ -191,4 +191,44 @@ Virtual interfaces: allow you to run multiple l3 networks over layer 2 connectio
 - private: used to connect to AWS private services + VPCs
 - transit
 
+# Direct connect -> private VIF 
+- access 1 VPC resources using private IP addresses 
+- attached to a virtual private gateway, must be in the same region where the DX location is created
+- MTU of normal or jumbo frames are supported
+- private VIFs that are terminating a virtual private gateway, you are able to use route propogation
 
+Creating a Private VIF
+- choose the virtual private gateway or direct connect gateway for terminating the connection
+- you need to make sure that you are inputting the BGP ASN 
+- choose your IP addresses, or have AWS generate that for you 
+- you choose the VLAN, and this needs to match the customer side 
+
+# Direct connect -> public VIF 
+- used for accessing public zone services 
+- you use this to access public AWS services
+- no direct access to private VPC services
+- you can advertise any public IP adresses you own over BDP
+- you choose the VLAN, which needs to match the customer side
+- you need to configure MD5 authentication 
+
+you can be on premise, and access AWS public services, using the aws global network, not the public internet 
+
+- public VIFs only allow you to access AWS IP ranges, this doesn't give you access to customer owned networks ( other businesses )
+
+# public VIF + VPN 
+- encrypted + authenticated tunnel 
+- uses a public VIF + VGW/TGW public endpoints 
+- this will allow you access to the VPC 
+
+the VPN tunnel creates a private VPC connection between the customer gateway and an AWS VGW or TGW
+
+# Direct connect gateway
+- global network device that is accessible in all regions 
+- create private VIF => associate the VGW attatched to VPCs globally
+- VPC => on-premise communications allowed
+
+- if you have a direct connect gateway that connects on premise to mutliple VPCs that are in different regions, this doesn't allow connection
+between the two VPCs
+
+- create a DX gateway which is a global AWS resource
+- create a private VIF, terminate the private VIF into the direct connect gateway 
