@@ -232,3 +232,57 @@ between the two VPCs
 
 - create a DX gateway which is a global AWS resource
 - create a private VIF, terminate the private VIF into the direct connect gateway 
+
+# Direct connect, transit VIFs, and TGW
+- DX gateway can only do private VIF or transit VIF
+- DX gateways don't route traffic through their connections, meaning if you have two TWG attachments, they cannot route between each other through the DXGW, they must create an attachment between them
+
+- Transit gateway DOES allow routing across DX gateway attachments allowing connectivity between two hybrid locations
+
+DX gateway does not alow routing between interfaces attached to the DX gateway
+
+Transit VIF: should be used to access one or more AWS VPC transit gateways associated with direct connect gateways. you can use transit virtual interfaces with any direct connect dedicated or hosted connection
+
+# DX resilience 
+- DX locations are connected to the AWS region via redundant high speed connections
+
+cross connect: cable between DX router and customer provided router in the direct connect location
+
+How to add resilience?
+- provision multiple DX connections, this will allow you to have resilience if one of the AWS DX routers goes down
+- you can add multiple customer routers at the DX location
+- you can add multiple customer routers at the on-premise location
+
+- you can add two geographically different locations, with two different DX locations, and two different customer premises
+
+most resilience: 
+- two geographic locations
+- two ports in each geographic location
+
+# DX link aggregation groups
+- allows you to take multiple physical connections and act as one
+- max lag speed is 200GB
+
+- this can help with cable resilience 
+- this is a feature to help with adding speed
+
+# Route 53 record types
+
+NS -> allow delegation of zones to occur
+A / AAAA -> map hostnames to IP addresses, A -> IPV4, AAAA -> IPV6
+CNAME -> creates DNS shortcuts, these are host -> host mappings
+MX -> used for sending email
+TXT -> domain ownership 
+
+
+# CNAME vs ALIAS
+- you cannot CNAME apex domains
+
+alias records fix this because when you get an ELB, you are referring to a domain name which would be a CNAME record
+
+alias:
+- maps a name to an AWS resource
+- can be used for apex domain, or normal records
+
+
+# simple routing 
