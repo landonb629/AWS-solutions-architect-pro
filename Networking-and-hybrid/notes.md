@@ -285,4 +285,78 @@ alias:
 - can be used for apex domain, or normal records
 
 
-# simple routing 
+# route53 routing types
+Simple routing -> there are no health checks
+
+r53 health checks -> 
+  - health checks are configured separately from the records in r53
+  - default checks every 30 seconds
+  - TCP, HTTP/HTTPS, also allows for string matching
+  check types: 
+    - endpoint check
+    - cloudwatch alarm check
+    - checks of checks ( calculated ), basically the status of other checks
+  Notification:
+    - can send to SNS when something is failed
+
+Failover routing ->
+  - use when you need to configure active / passive failover 
+  - you create a primary and secondary record
+
+Multi-value routing ->
+  - meant to improve availability by allowing a client to resolve a DNS name to multiple different IP addresses
+  - when you have many resources that can all handle requests that need health checks 
+
+Weighted Routing ->
+  - simple form of load balancing, when testing new versions of software
+  - you add a weight in percent, which specifies how many times a record is returned
+
+Latency Routing ->
+  - use when trying to optimize performance 
+  - the record which returns the lowest latency, is where users are routed
+  - best for global applications
+
+Geolocation Routing -> 
+  - HAS NOTHING TO DO WITH CLOSEST RECORD
+  - if you are in the UK and only a canadian record exists, you aren't going to be returned the record
+  - you create records and tag them with the location of the country or state 
+  - it returns applicable records, or the default, or no answer
+    - applicable would be it checks if there are any records in the state, then country, then contintent, then default, then no answer
+  - this type of record is useful for restricting content
+  - if you create a US record, then only the people that are in the US can reach this location
+
+Geoproximity Routing -> 
+  - aims to provide records that are CLOSEST to your customer
+  - this is different from latency routing, because this has nothing to do with connection speed, this has everything to do with the distance between you and the record
+  - bias = allows users to increase or decrease the size of the geographic area, this will impact where resources are routed
+
+# DNSSEC with route53 
+
+DNS poisoning / spoofing -> hackers intercepting DNS queries and returning their own IP addresses so you are sent to the attacker machines 
+
+Configuring DNSSEC for route53:
+  - sign the records in your hosted zone with the private key in an asymmetric key pair
+  - provide the public key from the key pair to the domain registrar
+
+# Private link 
+- provide or consume a service that is in another AWS account privately
+- used to provide security access to service providers
+two sides of relationship
+- service provider -> VPC where the service is being provided
+- consumers -> VPCs where you are consuming the service
+
+- the service is injected into the VPC using interface endpoints, which are just ENIs that allows network connections to remain private
+
+interface endpoint -> service provider VPC -> load balancer -> endpoint application services
+
+example help:
+- if you want HA, you will need to have multiple endpoints
+- only supports IPv4 & TCP 
+- private DNS is supported 
+- DX, s2s, and VPC peering are supported
+
+# VPC endpoints = Gateway + interface
+PROJECT: create a VPC based serverless application that interacts with dynamodb through gateway endpoints
+- provide private access to s3 and dynamodb 
+- when you add gateway endpoints, prefix lists are added to the route table to look at the gateway endpoint
+
