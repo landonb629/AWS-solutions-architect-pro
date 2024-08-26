@@ -178,3 +178,52 @@ for the exam:
 - can handle unencrypted, or KMS with extra configuration, SSE-customer manager keys can also be configured
 - no system events, glacier or glacier deep archive cannot be replicated
 - by default DELETES are not replicated, this can be configured though
+
+# S3 object encryption CSE/SSE
+- encryption is configured at the object level 
+
+Client side encryption -> objects being uploaded are already encrypted by the client, AWS cannot see the data in its plaintext form
+- use this when you need to manage the keys and encryption + decrytion process
+
+Server side encryption -> objects aren't initially encrypted by s3, in theory if someone was able to listen to the HTTPS upload tunnel, the objects would be in plaintext
+- SSE-C: encrytion using customer managed key. you managed the key, s3 managed the encryption. you give the key and the plaintext object, there is a one way hash and the ciphertext object that is stored, you need to give the key to unencrypt the object
+
+- SSE-S3: default encryption managed by s3. you upload the unencrypted object, and aws will manage the key and the encryption of the object. you have little control over the actual key that is used for encryption. AES-256.
+
+- SSE-KMS: encryption using a KMS key. using customer managed KMS key, you have full configuration ability on that key. gives you fine grained control over the key itself. 
+
+
+# S3 bucket keys
+
+How does encryption work with the default encryption key? 
+1. for every put call, aws s3 will call kms to generate a data encryption key that gets stored with the objects, this is an api call to KMS also 
+
+why does this cause problems?
+- calls to KMS have a cost & levels where throttling occur
+
+what are bucket keys? 
+- there is a time limited bucket key that gets created to generate the data encryption keys within S3, this is lower the amount of calls that need to be made to KMS 
+
+# s3 presigned URLs
+- provides access with a URL that has authentication information for interacting with s3 objects 
+- typically used in serverless architectures when you want to control access into the s3 bucket
+- time limited, and authentication information is baked into the URL 
+
+EXAM SCENARIO:
+- you can create a presigned URL for and object that you don't have any access to, you will still not have access though
+- permissions on the URL match the identity that generated it
+- don't use presigned URL with an assumed role, the URL will stop working once the temporary credentials expire
+
+
+# S3 select & glacier select 
+
+s3 / glacier select -> allows you to access parts of objects using SQL-like statements, so it's faster and cheaper
+- CSV, JSON, parquet files
+- since the data is filtered in s3, you get up to 400% speed increase and 20% cheaper
+
+# S3 access points 
+- simplifies acess management to s3 buckets / objects
+- you can create many access points that have different policies associated with them
+- each access point has it's own endpoint address
+
+aws s3control create-access-point
