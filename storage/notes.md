@@ -148,6 +148,8 @@ S3 intelligent tiering:
 
 a single rule cannot transition to standard-IA or One zone IA and then to glacier classes within 30 days ( duration minimums )
 - cannot have a rule that moves data from standard to standard-IA or one zone-IA, and then to glacier all within 30 days
+- you cannot have a rule that trasfers from standard to s3-IA or one zone IA within 30 days 
+- if an objects is stored on s3 standard, it cannot be transitioned to glacier unless it's a day after
 
 
 # S3 replication 
@@ -225,5 +227,134 @@ s3 / glacier select -> allows you to access parts of objects using SQL-like stat
 - simplifies acess management to s3 buckets / objects
 - you can create many access points that have different policies associated with them
 - each access point has it's own endpoint address
+- allows you to not have to deal with large bucket policies
 
 aws s3control create-access-point
+
+- access points can be assigned specifically to a VPC endpoint 
+
+# S3 object lock
+- enable on new s3 buckets -> if you want to do it on existing buckets, you need to request via AWS support
+- write-once read-many -> no delete, no overwrite
+- requires versioning
+
+These can be defined on each object:
+- retention period: specify days & years 
+  - compliance mode: cant be adjusted, deleted, or overwritten, cant reduce the retention settings
+  - Governance mode: special permissions can be granted allowing the lock settings to be adjusted
+    s3:BypassGovernanceRetention is the necessary permission, you also need to pass a header
+- legal hold 
+  - don't set any retention period, you just set this on or off 
+  - no deletes or changes until removed
+  - s3:PutObjectLegalHold is required to add or remove
+
+# Amazon Macie
+- data security and privacy service
+- discover, monitor, and protect data stored in s3 buckets 
+- automated discovery of data ie Pii, PHI, finance
+- you create discovery jobs in macie and they will search in your configured buckets, they have findings generated
+- findings: 
+  - policy findings -> actions that would reduce the security of the s3 bucket
+  - sensitive data findings -> discovers sensitive data in s3 buckets
+
+Managed data identifiers -> built into the product using ML patterns 
+Custom data identifiers -> Regex Based
+
+Integrates with security hub & findings events to eventbridge
+
+Centrally manage in one account -> either via AWS orgs or one macie account which is inviting
+
+# EBS volumes 
+
+General purpose SSD - GP2
+- 1GB - 16TB 
+- every volume has a baseline performance based on size 
+- you receive a baseline of IO credits, and they're refilled with minimum 100 IO credits per second regardless of volume size
+- all volumes are credited 3 IO per second for every GB in size up to 1 TB 
+- if your volumes are greater than 1TB, credit system isn't used & you always achieve baseline 
+
+General purpose SSD - GP3 
+- 3000 IOPS & 125MB/s - standard
+- base price is 20% cheaper than GP2 
+- there is no credit system with GP3
+
+Provisioned IOPS SSD ( io1 / io2 )
+- IOPS can be adjusted independently of size 
+- consistent low latency + jitter
+- block express -> 
+- io1 - 260,000 IOPS & 7500 MB/s max per instance
+- io2 - 160,000 IOPS & 4750 mb/s max per instance 
+- io2 block express - 260,000 IOPS & 7500 MB/s max per instance
+think of these per instance as a performance cap 
+
+
+HDD based EBS volume types 
+- st1 -> throughput optimized, cheaper than SSD
+  - 125GB - 16TB 
+  - max 500 IOPS
+  - baseline performance 40MB/s base 
+  - 250MB/s burst
+  - use with big data, data warehouses, and log processing
+- sc1 -> cold HDD, cheapest
+  - for infrequent workloads
+  - max 250 IOPS 
+  - lowest cost EBS volume
+
+
+Instance store volumes
+- TEMPORARY STORAGE -> if you shut off your EC2, or if the instance moves between hosts, the data is lost
+- block storage devices, attached directly to the EC2 instance
+- physically connected to one EC2 host, they're not available over the network 
+- highest storage performance on AWS 
+- included on the price on the instance
+- ATTACHED ONLY AT LAUNCH, CANNOT REATTACH MORE
+
+- should be used for buffers, caches, scratch data, and other temporary content
+
+
+When would you choose EBS vs instance store:
+- persistence, or resilience, isolated from instance lifecycle -> use EBS
+- super high performance needs, and cost -> instance store volumes
+
+Cheap -> ST1 or SC1 
+throughput or streaming -> ST1
+Boot -> cannot use ST1 or SC1 
+
+GP2/3 -> up to 16,000 IOPS
+IO1/2 -> 64,000 iOPS or 256k with block express 
+RAID0 -> up to 260,000 with block express 
+Instance store can give you up to millions of IOPS
+
+# AWS Transfer Family 
+- Managed file transfer service - supports TO or FROM s3 and EFS 
+- provides managed "servers" which support protocols
+- multi AZ 
+- server per hour cost + data transferred cost 
+- can use directory service or custom IDP 
+- FTP -> internal VPC only 
+- AS2 needs to be VPC internet / internal only 
+
+FTP -> unencrypted file transfer
+FTPS -> file transfer with TLS 
+SFTP -> file transfer for SSH 
+AS2 -> structured B2B data 
+
+Identities -> directory service, custom ( Lambda / APIGW )
+managed file transfer workflows -> serverless file workflow engine
+
+Endpoint types: 
+- Public: service is available to the public internet, only supports SFTP, there is a dynamic IP that can change, so use DNS, you can't control who has access
+- VPC internet: uses SFTP, FTPS, AS2. accesible over DX, or VPC 
+- VPC internal: uses STP, FTPS, SFTP, AS2. accessible over DX, or VPC
+
+Questions 
+
+Which storage types are resilient against AZ failure?
+- EFS
+- S3
+- FSx for windows
+
+Which storage types support POSIX?
+- EFS
+- EBS
+- Instance store
