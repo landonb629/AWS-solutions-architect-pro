@@ -359,4 +359,3 @@ example help:
 PROJECT: create a VPC based serverless application that interacts with dynamodb through gateway endpoints
 - provide private access to s3 and dynamodb 
 - when you add gateway endpoints, prefix lists are added to the route table to look at the gateway endpoint
-

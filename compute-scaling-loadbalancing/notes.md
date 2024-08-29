@@ -107,3 +107,154 @@ How to use both of them?
 - perform the configuration of the baseline 
 - create an AMI 
 - customize the base AMI with user data
+
+# ELB architecture 
+
+- AWS suggests that you use minimum /27 subnet, you need a minimum of 8 IP addresss
+
+Cross zone load balancing -> allows any load balancer node to equally distribute traffic that it receives to any registered instances regardless
+of what zone they're in
+- this is now enabled as default 
+
+# Session state 
+
+- externally stored sessions: if you store your session state for your web app not local to the compute, you can free your load balancer to connect you to any registered instance without losing the state information
+
+# ALB vs NLB 
+
+ALB 
+- ENCRYPTION TERMINATES AT NLB 
+- Layer 7 load balancer -> listens on HTTP/S
+- No other Layer 7 Protocols 
+- No TCP/UDP/TLS listeners
+- no unbroken SSL -> a new connection is created between ALB and your application 
+- slower than network load balancers
+- health checks can evaluate application health 
+- if you need to forward encrypted connections through without termination, you need to use NLB 
+
+NLB 
+- TCP, TLS, UDP
+- no visibility of HTTP or HTTPS
+- No headers, cookies, session stickiness 
+- 25% of ALB latency, they're super fast
+- forward TCP to instances... so these have unbroken encryption ( they don't terminate on the network load balancer )
+
+# Session stickiness 
+
+- allows us to control which backend instances are used for a given user session
+- 
+
+when stickiness is enabled:
+- the ALB generates a cookie called AWSALB, and this represents the user and their session, you define the duration 1 second - 7 days
+- if the instance that the cookie maps to fails, a new instance will be used 
+- if the cookie expires, it's removed and a new backend instance will be picked
+
+Ideally, we would still want to externall store state
+
+Problems:
+- you can overload some of the servers if you have some users that are very heavy on use
+
+# ASG - auto scaling groups
+
+- auto-scaling and self healing for EC2 instances
+- min size, max size, desired
+- linked to a VPC, you set the subnets that are available
+
+- ASGs are free, resources are not 
+- use cooldowns to avoid rapid scaling 
+- use more, smaller instances 
+- 
+
+launch configurations or launch templates: 
+- launch config
+- launch template
+
+scaling policies: update the desired capacity based on specific metrics
+- rules that adjust the vaules of an autoscaling group 
+- manual scaling -> manually adjust the desired capacity 
+- scheduled scaling -> time based adjustment, known periods of usage
+- dynamic scaling -> 
+  - simple -> "CPU above 50%"
+  - step scaling -> more detailed rules, "add one if CPU above 50 but add 3 if CPU above 80"
+  - target tracking -> "desired aggregate CPU 40%", not all metrics are accepted here, request count per target, CPU, network are allowed
+- cooldown periods -> this allows your autoscaling group to stabalize and prevent it from launching or terminating additional instances before the effects of previous scaling activities are visible 
+
+ASG + Load balancers
+- using an ASG, instances will automatically be removed from a target group and added based on the scaling 
+- ASG can use the load balancer health checks instead of the EC2 status checks. load balancer checks are application aware, EC2 health checks are not 
+
+Scaling processes within an ASG
+- launch and terminate -> SUSPEND and RESUME 
+- AddToLoadBalancer -> addto LB on launch 
+- AlarmNotification -> accept notification from CW 
+- AZRebalance -> balances instances evently across all of the AZs 
+- HealthCheck -> instance health checks are on/off
+- ReplaceUnHealthy - terminate unhealthy and replace
+- ScheduledActions 
+- Standby - use this for instances when performing maintenance 
+
+# ASG lifecycle hooks
+- custom actions on instances during ASG actions 
+- instance launch or instance terminate transitions
+- eventbridge and SNS can be integrated for other eventdriven decisions 
+if we define a lifecycle hook for launch:
+- scale out activity happens
+- instance moved into a pending state 
+- instance moves into a pending:wait state
+- we perform the custom actions on our instance
+- moves to pending:proceed state
+- moves to inService
+
+if we define a lifecycle hook for terminate:
+- scale in happens 
+- instance moves to terminate:wait -> this will sit here for 3600 seconds or until the completeLifecycleAction runs
+- moves to terminate:proceed
+- moves to terminated
+
+# ASG auto scaling policies 
+- scaling policies are not required 
+
+scaling based on SQS -> approximateNumberOfMessagedVisible
+
+# ASG health checks
+
+EC2 health checks 
+- default 
+- anything but RUNNING is seen as uhealthy
+
+ELB health checks
+- healthy is RUNNING and passing the ELB health checks
+- this can be application aware, because it can check a custom route
+
+
+Custom
+- instance can be marked healthy and unhealthy by an external system
+
+Health check grace period -> delay before starting the checks, default is 5 minutes
+
+
+# Connection draining & deregistration delay 
+
+connection draining 
+- what happens when instances are unhealthy or deregistered 
+- the normal behavior would be all connections are closed & no new connections are allowed. with connection draining, in-flight requests are allowed to finish
+- CLASSIC LOAD BALANCERS ONLY
+
+deregistration delay
+- supported on ALB, NLB, and GWLBs 
+- defined on the target group - NOT the LB 
+- stops sending requests to deregistering targets but allows the existing connections to continue until they complete naturally, or the deregistration delay gets reached  
+
+# X-forwarded-for & PROXY protocol 
+
+Problem: when we add a load balancer to the architecture, we lose the ability to see the source IP address of the client
+
+x-forwarded
+- http header ( layer 7 )
+- added or appended by proxies or LBs, as the left most header in the list
+- any other proxies that need to be passed through will have the header appended
+- not supported on NLB 
+
+PROXY protocol
+- works on layer 4, this is a layer 4 header ( works with HTTP and HTTPS )
+- v1 is CLB and NLB is v2 which is binary encoded
