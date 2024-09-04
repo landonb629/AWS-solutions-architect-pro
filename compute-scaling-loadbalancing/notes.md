@@ -258,3 +258,41 @@ x-forwarded
 PROXY protocol
 - works on layer 4, this is a layer 4 header ( works with HTTP and HTTPS )
 - v1 is CLB and NLB is v2 which is binary encoded
+
+# EC2 placement groups 
+
+Cluster - packs instances close together inside an AZ. this enables workloads to achieve the low latency network performance necessary for tightly-coupled node-to-node communication that is typical of HPC applications 
+  - same rack, and sometimes the same EC2 host
+  - 10 GBPS stream possible, 5GBPS normally 
+  - can't span AZs, only possible with a single AZ 
+
+Partition - spreads your instances across logical partitions such that groups of instances in one partition do not share the underlying hardware with groups of instances in different partitions. this is used in largely distributed and replicated workloads, such as hadoop, cassandra, and kafka 
+  - can be created across multiple AZs in a region 
+  - difference between spread and partition, is that partition can shared EC2 instances on the same hardware
+
+Spread - strictly places a small group of instances across distinct underlying hardware to reduce correlated failures
+  - maximum amount of availability and resiliency 
+  - each instance is placed on its own rack with it's own power
+  - you only can have 7 instances per AZ in a single region 
+  - provides a lot of infrastructure isolation 
+  - cannot use dedicated instances or hosts
+
+# Gateway Load Balancers
+
+help you run and scale 3rd party appliances. things like firewalls, intrusion detection and prevention systems 
+- inbound and outbound traffic ( transparent inspection and protection )
+- gateway load balancer endpoints: traffic enters and leaves these endpoints
+- GWLB balances across multiple backend appliances
+- traffic is tunneled using GENEVE protocol 
+Flow stickiness: one flow will always use the same appliance, this allows monitoring the flow 
+
+typical architecture:
+- uses security VPC and application VPC 
+
+1. client accesses web application which arrives at the internet gateway, which has an ingress route table 
+2. internet gateway will translate the destination from public to private, traffic will be sent to gateway load balancer endpoint 
+3. packets are forwarded to gateway load balancer in security VPC, they are sent to the securty appliances
+4. packets are returned to the GWLB and sent back to the GWLBE 
+5. packets are sent to the ALB and then the application
+
+# difference between launch template and launch configuration
