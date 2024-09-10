@@ -214,3 +214,147 @@ scan:
 - most flexible operation
 - scan goes through a table item by item, so for big tables this can be very costly 
 - use this when you are looking for values but you don't know the partition key
+
+# dynamodb consistency module 
+
+- dynamodb data is replicated to multiple AZs by default, they are replicated between storage nodes
+  - one of the AZs is the leader of the storage nodes
+  - writes are directed to the leader node, this node is known as consistent 
+  - the leader will now begin replicated to the reader storage node, if you were to freeze time then you wouldn't have consistency because the third availability zone doesn't have the changes 
+
+types of reads in dynamo
+- eventually consistent -> these are half the price as strongly consistent reads, with this though you could be unlucky enough to receive a node that hasn't reached consistency yet
+- strongly consistent -> always uses the leader node, so it's the normal cost, and it doesn't scale as well 
+
+WCU calculation
+1. calculating WCU per item: (Item size / 1KD)(3)
+2. multiply by average number per second (30)
+
+RCU calculation
+1. (Item size / 4KB)(1)
+2. multiply average read ops per second (10)
+3. that gives you the strongly consistent -> to get eventual just divide by 2
+
+# DynamoDB indexes 
+- querying is limited in dynamodb because we are only able to work on 1 PK value and optionally a single or range of SK values
+what are indexes? -> methods for improving the efficiency for retrieving data in dynamodb 
+  - indexed are an alternative view on the table 
+
+Local secondary index -> this is a different SK 
+  - you cannot add LSI after the table has been created
+  - 5 LSI per base table 
+  - alternative sort key on the table, but the same partition key
+  - uses the same RCU and WCU on the table
+
+Global secondary index -> this is a different PK and SK 
+  - these can be created at anytime 
+  - 20 GSI per base table 
+  - let you define new PK and SK 
+  - they have their own RCU and WCU 
+  - always eventually consistent 
+
+# Dynamodb streams and triggers
+
+streams
+- time ordered list of item changes in a table 
+- 24 hour rolling window
+- enable streams on a per table basis 
+- records INSERTS, UPDATES, and DELETES
+
+stream view types 
+- KEYS_ONLY: only PK and SK are recorded for what is changing 
+- NEW_IMAGE: stores the entire item after it has been changed, this cant show what has changed 
+- OLD_IMAGE: this shows you what the item looked like before it was changed
+- NEW_AND_OLD_IMAGES: pre and post state of the item is recorded
+
+Trigger concepts
+- actions to take place once data is actually changed
+- item changes generate events, which contains the changed data, and then an action is taken using that data, you do this with lambda functions
+- good for reporting and analytics, aggregation and notifications 
+
+Dynamodb Accelerator (DAX) -> create a POC on dax with some timing 
+- in-memory cache for dynamodb to improve the performance 
+
+traditional caches vs DAX
+
+generic in-memory cache:
+1. app checks cache for data
+2. data is missed and gets from the database, and then loads that data into the cache
+
+DAX:
+- you need to install the DAX SDK in your application
+- when using the DAX sdk, if DAX has your data, it will return it, but it will also go and get the data and hydrate the cache if DAX doesn't get a cache hit
+
+DAX architecture
+- dax runs in a cluster architecture with endpoints spread across different availability zones 
+- primary node is write and the replicas are read 
+- it has an item cache, and a query cache
+- cache HITS are returned in microseconds, MISSES are in milliseconds
+- write through is supported, writing data to the cache and then to DDB
+- faster read operations with a lot less cost
+- DAX is deployed within a VPC 
+
+# Dynamodb Global tables
+- multi master cross region replication
+- tables are created in multiple regions and added to the same global table 
+- last writer wins is for conflict resolution 
+  - if you have two tables writing to the same record, the most recent write overrides everything else 
+- strongly consistent reads only in the same region as writes 
+
+# Dynamodb TTL 
+- allows you to set a timestamp that will automatically delete items inside a table 
+- you configure the specific attirbute selected for TTL 
+- they have no charge and performance impact
+- you can create a stream to track the TTL deletions for 24 hours
+
+# AWS elasticsearch 
+- managed implementation of elasticsearch
+- open source search product which is apart of the ELK stack 
+- not serverless, there are servers injected into your VPC 
+
+- elasticsearch - search and indexing services 
+- Kibana - visualization and dashboarding tools
+- logstash - similar to CWLogs, needs a logstash agnt installed on anything to ingest data 
+
+# Athena
+- serverless interactive querying service
+- good where loading / transformation isn't desired
+- ad-hoc queries on data -> pay only for what you consume 
+- schema-on-read - table like transition
+- schema translates data -> relational like when read 
+- source data is stored on S3, THIS IS NOT MUTABLE DATA
+- you use a schema to say what the table is supposed to look like, this isn't enforced until the queries are ran
+
+# Amazon Neptune 
+managed graph database service 
+- DBs where relationships are as important as data 
+- runs within a VPC 
+- multiAZ and scales via read replicas 
+- continuous backup to s3 // point in time recovery as well 
+- like RDS for graph DBs
+
+graph databases are useful for looking through different relationships 
+
+use cases:
+- graph style data 
+- social media .... anything involving fluid relationships 
+- fraud prevention 
+- recommendation engines 
+- network and IT operations 
+- biology and life sciences 
+
+# amazon quantum ledger database
+- part of the AWS blockchain products 
+- immutable append only ledger based database 
+  - crypto verifiable transaction log 
+  - transparent -> full history is always accessible 
+  - 3AZ resilience and replication between the AZs 
+  - can stream data into kinesis 
+  - document DB model
+  - ACID 
+
+use cases: 
+- Finance 
+- Medical - full history of data changed 
+- logistics
+- legal
