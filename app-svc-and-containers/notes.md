@@ -116,3 +116,180 @@ Logging
 - logs from lambda executions go to cloudwatch logs 
 - metrics -> invocations, retires, latency is stored in cloudwatch 
 - x-ray -> for distributed tracing capabilities 
+
+Invocation of functions
+- synchronous invocation
+- asynchronous invocation
+- event source mappings
+
+NOTE: event source mapping is a different type of trigger, this is where the lambda function is going to read from the configured source
+
+synchronous 
+  - CLI or API invokes a lambda function, and waits for the response 
+  - this also happens if you're using lambda functions via API gateway
+  - errors or retires need to be handled within the client
+
+asynchronous 
+ - usually when AWS services invoke lambda functions 
+ - lambda is responsible for any reprocessing ( between 0 and 2 times )
+ - lambda function code must be idempotent, you can run as many times as you want and the outcome will be the same
+
+event source mappings
+ - used with streams or queues which don't generate events
+ - typically used on streams or queues which don't support event generation 
+ - this is going to poll the lambda function 
+ - the lambda function isn't being delivered an event, the lambda function is configured to read from that source
+
+Lambda versions
+ - the code + the configuration of the lambda function 
+ - its immutable, and it never changes once its created 
+ - $latest points at the latest version
+ - Aliases point at that version - can be changes ( DEV, STAGE, PROD )
+
+ - unqualified ARN: the lambda function without a version 
+
+
+Lambda startup times
+ - functions run in an execution environment which is a small container with resources allocated to it
+ - cold start: full creation and configuration including downloading the function code
+ - if you're running your function consecutively, it could use the same execution context, which will be known as a lambda warm start
+ - provisioned concurrency: AWS will create and keep x contexts warm and ready to use which will improve your start speeds
+
+Lambda function handler
+- execution environment: the code and runtime that you're using to run your functions 
+
+- INIT: creates or unfreezes the execution environment
+- INVOKE: runs the function handler ( cold start )
+- WARM START: the following invocations using the same environment which makes the execution quicker
+- SHUTDOWN: terminates the environment, so the next invocation will be a cold start
+
+Lambda layers
+- you can split the function from the dependencies and share across multiple different functions
+- allows libraries to be contained in a separate package 
+
+
+# API gateway
+
+request phase -> authorizes, validates and transforms 
+response phase -> transform, prepare, and return to the client
+
+Authentication
+- Cognito user pools integration
+  - passes the token into the request to API gateway
+- lambda based 
+  - client has a bearer token that is passed with the request 
+  - lambda authorizer is called, does custom computations for authentication
+  - IAM policy and identifier is passed back to API gateway
+- IAM 
+  - pass credentials into the header 
+
+endpoint types 
+ - edge-optimized - routed to the nearest cloudfront POP
+ - regional - clients in the same region
+ - private endpoint - accessible only from a VPC 
+
+stages 
+- apis are deployed to stages, each stage has one deployment 
+- ex: dev, and production
+- you can enable stages for canary deployment so a percentage of traffic is sent to the canary
+- changes made in API gateway are not live, they must be deployed to a stage
+
+- stages could be in the form of v1 / v2
+- stage variables: this can be used to point at a different lambda function alias 
+  - dev might point to $latest
+  - after that we can point to versions 
+
+deployments
+
+errors
+- 4xx - invalid request on the client side
+- 5xx - server errors, valid request just a backend issue
+- 400 - bad request, generic 
+- 403 - access denied error 
+- 429 - throttling is occuring on requests
+- 502 - bad gateway exception 
+- 504 - integration error 
+
+caching
+- caches by default for 300 seconds, and be max 3600 seconds
+- calls only go to the backend when there is a cache miss
+- cache can be encrypted 
+
+Methods and resources 
+
+resources 
+- these are resources, they have different integrations 
+- /listsomething -> you create methods in each of these resources ( GET, PUT, POST )
+- /putsomething
+
+- methods are where you configure your integrations
+
+integrations 
+- MOCK: used for testing, no backend environment
+- HTTP: must configure api request and response 
+- HTTP PROXY: pass through integration unmodified, return to the client unmodified 
+- AWS: allows API to expose aws services, you configure request and response and setup valid mappings 
+- AWS_PROXY: low admin overhead, you pass the request to the lambda function
+- HTTP_PROXY: request passed straight through, no mapping template
+
+OpenAPI and swagger 
+- OpenAPI spec: used to be swagger, API description format for defining what APIs do
+  - contains input and output parameters & authentication methods 
+  - non tech information - contact info, licenes, terms of use, etc.
+
+# AWS step functions 
+
+- chaining lambda functions together gets difficult at scale
+- perform a flow 
+- standard workflow -> 1 year execution limit
+- express workflow -> run for up to 5 minutes
+- started via API gateway, IOT rules, eventbridge, lambda
+
+- states: the things that are occuring inside a workflow 
+  - SUCCEED & FAIL 
+  - WAIT
+  - CHOICE -> allows state machine to take a different path based on the input 
+  - PARALLEL -> perform multiple sets of actions at the same time 
+  - MAP -> accepts a list of things 
+  - TASK -> represents a single unit of work performed by a state machine, can be integrated with many different AWS services 
+
+# Simple workflow service 
+
+- stepfunctions is the replacement for this service 
+- build workflows to coordinate over distribution components 
+- predecessor to step functions - uses instances and servers 
+- 
+
+# AWS mechanical turk
+- managed human task outsourcing api - extend your app with humans 
+- requesters to post human intelligence tasks 
+- workers earn money by completing HITs 
+- pay per task, perfect for tasks that are better suited for humans 
+- qualifictations -> worker attribute, requires test and can be a requirement to complete HITs 
+
+- data collection, manual processing, image classification 
+
+# elastic transcoder and media convert
+- file based video transcoding services 
+- mediaconvert is soft of elastic transocder v2 
+- serverless - pay for resources used 
+- add jobs to pipelines ET or queues MC 
+- file loaded from s3, processed, stored on s3 
+- mediaconvert supports eventbridge for job signalling 
+
+elastic transcoder is legacy, choose media convert
+
+# AWS IOT
+- IoT core is a suite of products, not one thing
+- provisioning, updates, and control
+- device shadow: virtual copy of a device that you can communicate with, a way to avoid unreliable connections  
+- rules: event driven integration with other aws services 
+  - match events on the messages that come from IoT devices
+
+#  AWS greengrass
+- extends some aws services to the edge
+- compute, messaging, data management, and ML
+- locally run lambda functions
+- locally run containers
+- IOT device shadows run locally 
+- lambdas can access hardware locally
