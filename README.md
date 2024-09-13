@@ -12,3 +12,8 @@ study materials for AWS solutions architect professional
 # Databases
 
 1. implement DAX on a serverless application 
+
+# caching, delivery, and edge 
+
+1. adding restricted, and unrestricted files to s3 bucket, setting up signed cookies and signed URLs to block access unless a certain criteria is met
+
